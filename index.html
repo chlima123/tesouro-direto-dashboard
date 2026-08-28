@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tesouro Direto — Painel de Cotações & Títulos Públicos</title>
+  <meta name="description" content="Dashboard interativo de cotações, taxas, preços unitários e simulador de títulos do Tesouro Direto (STN / B3)." />
+  <style>
+    :root {
+      --bg-main: #0b1513;
+      --bg-card: #12211e;
+      --bg-card-hover: #182c28;
+      --bg-card-selected: #1b3830;
+      --border-color: #1e3a33;
+      --border-focus: #cda052;
+      --text-main: #f3f7f5;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+      --brand-emerald: #10b981;
+      --brand-emerald-dark: #064e3b;
+      --brand-gold: #cda052;
+      --brand-gold-light: #f5d78e;
+      --brand-blue: #38bdf8;
+      --brand-purple: #a855f7;
+      --brand-pink: #ec4899;
+      --brand-amber: #f59e0b;
+      --badge-bg: rgba(205, 160, 82, 0.15);
+      --badge-border: rgba(205, 160, 82, 0.35);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --shadow-sm: 0 2px 4px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 14px rgba(0,0,0,0.4);
+      --shadow-lg: 0 10px 30px rgba(0,0,0,0.6);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Topbar */
+    .topbar {
+      background: linear-gradient(180deg, #102420 0%, #0c1b18 100%);
+      border-bottom: 1px solid var(--border-color);
+      padding: 20px 32px;
+      position: relative;
+    }
+
+    .topbar-content {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--brand-gold);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .eyebrow-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: var(--brand-emerald);
+      box-shadow: 0 0 8px var(--brand-emerald);
+      display: inline-block;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      max-width: 760px;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-weight: 600;
+      font-family: var(--font-mono);
+    }
+
+    .btn-print {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-print:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--brand-gold);
+      color: var(--brand-gold-light);
+    }
+
+    /* Container */
+    .main-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px 32px;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* KPI Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .kpi-card:hover {
+      border-color: rgba(205, 160, 82, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .kpi-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--kpi-accent, var(--brand-gold));
+    }
+
+    .kpi-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .kpi-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-top: 6px;
+      font-family: var(--font-mono);
+    }
+
+    .kpi-subtext {
+      font-size: 0.78rem;
+      color: var(--text-subtle);
+      margin-top: 4px;
+    }
+
+    /* Filters Bar */
+    .controls-bar {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .tabs-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .tab-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tab-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      background: var(--brand-emerald-dark);
+      border-color: var(--brand-emerald);
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+    }
+
+    .tab-count {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+    }
+
+    .search-filter-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 260px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-subtle);
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      background: #091311;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 10px 40px 10px 36px;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--brand-gold);
+    }
+
+    .search-hint {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      background: rgba(255, 255, 255, 0.08);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .filter-options {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .select-wrap select {
+      background: #091311;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 9px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.84rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .select-wrap select:focus {
+      border-color: var(--brand-gold);
+    }
+
+    /* 2-Column Workspace Grid */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 1100px) {
+      .workspace-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Table Container */
+    .table-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+    }
+
+    .table-header-info {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.15);
+    }
+
+    .table-count-label {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      max-height: 680px;
+      overflow-y: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.86rem;
+    }
+
+    th {
+      background: #0d1b18;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+    }
+
+    tbody tr {
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    tbody tr:hover {
+      background: var(--bg-card-hover);
+    }
+
+    tbody tr.selected {
+      background: var(--bg-card-selected);
+      border-left: 3px solid var(--brand-gold);
+    }
+
+    .title-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .title-name {
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .title-tag-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .badge-cat {
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      display: inline-block;
+    }
+
+    .badge-semestral {
+      background: rgba(168, 85, 247, 0.15);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      color: #c084fc;
+      font-size: 0.68rem;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    .rate-val {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--brand-gold-light);
+    }
+
+    .price-val {
+      font-family: var(--font-mono);
+      color: var(--text-main);
+    }
+
+    .date-val {
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      font-size: 0.82rem;
+    }
+
+    /* Detail / Simulator Panel */
+    .detail-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      position: sticky;
+      top: 24px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .panel-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--brand-gold);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .panel-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+
+    .panel-category {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .rate-highlight-box {
+      background: linear-gradient(135deg, rgba(205, 160, 82, 0.1) 0%, rgba(16, 185, 129, 0.08) 100%);
+      border: 1px solid var(--badge-border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .rate-highlight-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+    }
+
+    .rate-highlight-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--brand-gold-light);
+      font-family: var(--font-mono);
+      margin: 4px 0;
+    }
+
+    .rate-highlight-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .specs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .spec-item {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+    }
+
+    .spec-label {
+      font-size: 0.7rem;
+      color: var(--text-subtle);
+      text-transform: uppercase;
+    }
+
+    .spec-val {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: #ffffff;
+      font-family: var(--font-mono);
+      margin-top: 2px;
+    }
+
+    /* Simulator Section */
+    .simulator-section {
+      border-top: 1px solid var(--border-color);
+      padding-top: 20px;
+      margin-top: 20px;
+    }
+
+    .sim-heading {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sim-inputs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .sim-btn-val {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .sim-btn-val:hover, .sim-btn-val.active {
+      background: var(--brand-emerald-dark);
+      border-color: var(--brand-emerald);
+      color: #ffffff;
+    }
+
+    .sim-input-box {
+      width: 100%;
+      background: #091311;
+      border: 1px solid var(--border-color);
+      color: #ffffff;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-family: var(--font-mono);
+      margin-bottom: 12px;
+    }
+
+    .sim-result-box {
+      background: #091311;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      text-align: center;
+    }
+
+    .sim-result-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .sim-result-val {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--brand-emerald);
+      font-family: var(--font-mono);
+      margin: 4px 0;
+    }
+
+    .sim-result-sub {
+      font-size: 0.75rem;
+      color: var(--text-subtle);
+    }
+
+    /* Visual Yield Chart */
+    .chart-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      margin-top: 24px;
+    }
+
+    .chart-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+
+    .chart-sub {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .bars-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 200px 1fr 100px;
+      align-items: center;
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .bar-row {
+        grid-template-columns: 140px 1fr 80px;
+      }
+    }
+
+    .bar-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .bar-track {
+      background: rgba(255, 255, 255, 0.04);
+      height: 18px;
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    .bar-value {
+      font-size: 0.82rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      text-align: right;
+      color: var(--brand-gold-light);
+    }
+
+    /* Footer */
+    footer {
+      background: #091311;
+      border-top: 1px solid var(--border-color);
+      padding: 24px 32px;
+      margin-top: 40px;
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-subtle);
+    }
+
+    footer a {
+      color: var(--brand-gold);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Prefers Reduced Motion */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        transition: none !important;
+        animation: none !important;
+        transform: none !important;
+      }
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+      .topbar {
+        background: #ffffff !important;
+        border-bottom: 2px solid #000000 !important;
+        color: #000000 !important;
+      }
+      h1, .kpi-value, .title-name, .spec-val {
+        color: #000000 !important;
+      }
+      .topbar-actions, .controls-bar, .simulator-section, .btn-print {
+        display: none !important;
+      }
+      .workspace-grid {
+        grid-template-columns: 1fr !important;
+      }
+      .table-card, .kpi-card, .detail-panel, .chart-section {
+        background: #ffffff !important;
+        border: 1px solid #cccccc !important;
+        box-shadow: none !important;
+      }
+      .table-wrap {
+        max-height: none !important;
+        overflow: visible !important;
+      }
+      th {
+        background: #f0f0f0 !important;
+        color: #000000 !important;
+        position: static !important;
+      }
+      td {
+        border-bottom: 1px solid #dddddd !important;
+        color: #000000 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-content">
+      <div>
+        <div class="eyebrow">
+          <span class="eyebrow-dot"></span>
+          SECRETARIA DO TESOURO NACIONAL · B3 · DADOS ABERTOS
+        </div>
+        <h1>Tesouro Direto — Painel de Cotações & Títulos</h1>
+        <p class="subtitle">
+          Consulta interativa e análise oficial de preços unitários (PU), taxas anuais (% a.a.) e prazos de vencimento dos títulos públicos federais para pessoas físicas.
+        </p>
+      </div>
+      <div class="topbar-actions">
+        <span class="badge-live" id="liveBadge">🟢 Base: 27/08/2026</span>
+        <button class="btn-print" onclick="window.print()" title="Imprimir ou exportar relatório em PDF">
+          🖨️ Imprimir / PDF
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+
+    <!-- KPI Grid -->
+    <section class="kpi-grid">
+      <div class="kpi-card" style="--kpi-accent: var(--brand-gold);">
+        <div class="kpi-label">Total de Títulos Ofertados</div>
+        <div class="kpi-value" id="kpiTotal">58</div>
+        <div class="kpi-subtext">Grade oficial ativa em negociação</div>
+      </div>
+
+      <div class="kpi-card" style="--kpi-accent: var(--brand-amber);">
+        <div class="kpi-label">Maior Taxa Prefixada</div>
+        <div class="kpi-value" id="kpiMaxPre">14,53%</div>
+        <div class="kpi-subtext">Tesouro Prefixado com Juros 2035</div>
+      </div>
+
+      <div class="kpi-card" style="--kpi-accent: var(--brand-blue);">
+        <div class="kpi-label">Maior Taxa IPCA+</div>
+        <div class="kpi-value" id="kpiMaxIpca">IPCA + 8,07%</div>
+        <div class="kpi-subtext">Tesouro IPCA+ com Juros 2030</div>
+      </div>
+
+      <div class="kpi-card" style="--kpi-accent: var(--brand-emerald);">
+        <div class="kpi-label">Spread Selic Médio</div>
+        <div class="kpi-value" id="kpiSelic">Selic + 0,03%</div>
+        <div class="kpi-subtext">Pós-fixados LFT (Reserva)</div>
+      </div>
+
+      <div class="kpi-card" style="--kpi-accent: var(--brand-pink);">
+        <div class="kpi-label">Horizonte de Vencimentos</div>
+        <div class="kpi-value" id="kpiPrazo">2027 → 2084</div>
+        <div class="kpi-subtext">De 5 meses a 58 anos de prazo</div>
+      </div>
+    </section>
+
+    <!-- Controls Bar -->
+    <section class="controls-bar">
+      <!-- Category Tabs -->
+      <div class="tabs-row" id="tabsRow">
+        <button class="tab-btn active" data-cat="todos">Todos <span class="tab-count" id="count-todos">58</span></button>
+        <button class="tab-btn" data-cat="selic">Tesouro Selic <span class="tab-count" id="count-selic">4</span></button>
+        <button class="tab-btn" data-cat="prefixado">Prefixados <span class="tab-count" id="count-prefixado">11</span></button>
+        <button class="tab-btn" data-cat="ipca">IPCA+ <span class="tab-count" id="count-ipca">15</span></button>
+        <button class="tab-btn" data-cat="renda_mais">Renda+ Aposentadoria <span class="tab-count" id="count-renda_mais">8</span></button>
+        <button class="tab-btn" data-cat="educa_mais">Educa+ <span class="tab-count" id="count-educa_mais">19</span></button>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="search-filter-row">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" class="search-input" placeholder="Buscar por título, vencimento, ano ou taxa..." />
+          <span class="search-hint">/</span>
+        </div>
+
+        <div class="filter-options">
+          <div class="select-wrap">
+            <select id="selectSemestral">
+              <option value="todos">Todos os fluxos</option>
+              <option value="sem">Sem juros semestrais (no vencimento)</option>
+              <option value="com">Com juros semestrais (cupons)</option>
+            </select>
+          </div>
+
+          <div class="select-wrap">
+            <select id="selectOrder">
+              <option value="venc_asc">Vencimento (Mais próximo)</option>
+              <option value="venc_desc">Vencimento (Mais longo)</option>
+              <option value="taxa_desc">Maior Taxa (% a.a.)</option>
+              <option value="taxa_asc">Menor Taxa (% a.a.)</option>
+              <option value="pu_asc">Menor Preço (PU)</option>
+              <option value="pu_desc">Maior Preço (PU)</option>
+              <option value="nome_asc">Nome do Título (A-Z)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Workspace Grid: Table + Detail Panel -->
+    <div class="workspace-grid">
+
+      <!-- Table Section -->
+      <section class="table-card">
+        <div class="table-header-info">
+          <span class="table-count-label" id="tableCountLabel">Exibindo 58 títulos públicos</span>
+          <span style="font-size:0.75rem; color:var(--text-subtle); font-family:var(--font-mono);">Clique em uma linha para detalhar</span>
+        </div>
+
+        <div class="table-wrap">
+          <table id="titlesTable">
+            <thead>
+              <tr>
+                <th>Título & Categoria</th>
+                <th>Vencimento</th>
+                <th>Taxa Compra (% a.a.)</th>
+                <th>PU Compra</th>
+                <th>PU Venda</th>
+                <th>Aplicação Mínima</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <!-- Renderizado dinamicamente via JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Detail & Simulator Sidebar -->
+      <aside class="detail-panel" id="detailPanel">
+        <div class="panel-eyebrow">DETALHES DO TÍTULO SELECIONADO</div>
+        <h2 class="panel-title" id="panelTitle">Tesouro Prefixado 2029</h2>
+        <div class="panel-category" id="panelCategory" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">Prefixado</div>
+
+        <div class="rate-highlight-box">
+          <div class="rate-highlight-label">Taxa Anual Contratada</div>
+          <div class="rate-highlight-value" id="panelRate">14,13% a.a.</div>
+          <div class="rate-highlight-desc" id="panelDesc">Rentabilidade fixa garantida até o vencimento</div>
+        </div>
+
+        <div class="specs-grid">
+          <div class="spec-item">
+            <div class="spec-label">Vencimento</div>
+            <div class="spec-val" id="panelVenc">01/01/2029</div>
+          </div>
+          <div class="spec-item">
+            <div class="spec-label">Prazo Restante</div>
+            <div class="spec-val" id="panelPrazoDias">887 dias</div>
+          </div>
+          <div class="spec-item">
+            <div class="spec-label">PU Compra</div>
+            <div class="spec-val" id="panelPuCompra">R$ 736,17</div>
+          </div>
+          <div class="spec-item">
+            <div class="spec-label">PU Venda (Resgate)</div>
+            <div class="spec-val" id="panelPuVenda">R$ 733,99</div>
+          </div>
+          <div class="spec-item">
+            <div class="spec-label">Aporte Mínimo</div>
+            <div class="spec-val" id="panelMinimo">R$ 30,00</div>
+          </div>
+          <div class="spec-item">
+            <div class="spec-label">Fluxo de Pagamento</div>
+            <div class="spec-val" id="panelFluxo">No Vencimento</div>
+          </div>
+        </div>
+
+        <!-- Investment Simulator -->
+        <div class="simulator-section">
+          <div class="sim-heading">
+            <span>📈 Simulador de Aporte</span>
+          </div>
+          <div class="sim-inputs">
+            <button class="sim-btn-val" onclick="setSimVal(1000)">R$ 1.000</button>
+            <button class="sim-btn-val active" onclick="setSimVal(5000)">R$ 5.000</button>
+            <button class="sim-btn-val" onclick="setSimVal(10000)">R$ 10.000</button>
+            <button class="sim-btn-val" onclick="setSimVal(50000)">R$ 50.000</button>
+          </div>
+          <input type="number" id="simAporteInput" class="sim-input-box" value="5000" min="30" step="100" />
+
+          <div class="sim-result-box">
+            <div class="sim-result-label">Estimativa de Resgate Bruto</div>
+            <div class="sim-result-val" id="simResgateVal">R$ 6.842,50</div>
+            <div class="sim-result-sub" id="simResgateSub">Lucro bruto estimado de +R$ 1.842,50 (+36,8%)</div>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- Comparative Visual Yield Chart -->
+    <section class="chart-section">
+      <h3 class="chart-title">Comparativo Visual de Rentabilidade por Família de Título</h3>
+      <p class="chart-sub">Taxas anuais (% a.a.) dos principais vencimentos em negociação no Tesouro Direto</p>
+
+      <div class="bars-container" id="barsContainer">
+        <!-- Renderizado dinamicamente via JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>
+      Fonte de Dados: <strong>Secretaria do Tesouro Nacional (STN)</strong> & <strong>B3</strong> · Portal Tesouro Transparente (CKAN API).
+    </p>
+    <p style="margin-top: 6px;">
+      Desenvolvido para uso do ecossistema de agentes <strong>Hermes / Gemini / Codex</strong> · Repositório: <a href="https://github.com/chlima123/tesouro-direto-dashboard" target="_blank">chlima123/tesouro-direto-dashboard</a>
+    </p>
+  </footer>
+
+  <script>
+    // Base de dados embutida gerada diretamente da API pública oficial
+    const DATA = [{"id": "tit-6", "nome": "Tesouro Prefixado 2027", "tipo_completo": "Tesouro Prefixado", "categoria": "prefixado", "categoria_nome": "Prefixado", "cor": "#F59E0B", "indexador": "Prefixado", "taxa_compra": 13.47, "taxa_venda": 13.59, "taxa_str": "13.47% a.a.", "pu_compra": 958.27, "pu_venda": 957.44, "pu_base": 957.44, "minimo": 30.0, "vencimento": "01/01/2027", "ano_vencimento": 2027, "dt_venc_iso": "2027-01-01", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-29", "nome": "Tesouro Prefixado com Juros Semestrais 2027", "tipo_completo": "Tesouro Prefixado com Juros Semestrais", "categoria": "prefixado", "categoria_nome": "Prefixado", "cor": "#F59E0B", "indexador": "Prefixado", "taxa_compra": 13.43, "taxa_venda": 13.55, "taxa_str": "13.43% a.a.", "pu_compra": 1005.16, "pu_venda": 1004.29, "pu_base": 1004.29, "minimo": 30.0, "vencimento": "01/01/2027", "ano_vencimento": 2027, "dt_venc_iso": "2027-01-01", "semestral": true, "data_base": "27/08/2026"}, {"id": "tit-4", "nome": "Tesouro Selic 2027", "tipo_completo": "Tesouro Selic", "categoria": "selic", "categoria_nome": "Tesouro Selic", "cor": "#10B981", "indexador": "Taxa Selic", "taxa_compra": -0.0, "taxa_venda": 0.01, "taxa_str": "Selic -0.00%", "pu_compra": 19763.01, "pu_venda": 19751.77, "pu_base": 19751.77, "minimo": 197.63, "vencimento": "01/03/2027", "ano_vencimento": 2027, "dt_venc_iso": "2027-03-01", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-7", "nome": "Tesouro Prefixado 2028", "tipo_completo": "Tesouro Prefixado", "categoria": "prefixado", "categoria_nome": "Prefixado", "cor": "#F59E0B", "indexador": "Prefixado", "taxa_compra": 13.79, "taxa_venda": 13.91, "taxa_str": "13.79% a.a.", "pu_compra": 841.77, "pu_venda": 840.15, "pu_base": 840.15, "minimo": 30.0, "vencimento": "01/01/2028", "ano_vencimento": 2028, "dt_venc_iso": "2028-01-01", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-2", "nome": "Tesouro Selic 2028", "tipo_completo": "Tesouro Selic", "categoria": "selic", "categoria_nome": "Tesouro Selic", "cor": "#10B981", "indexador": "Taxa Selic", "taxa_compra": 0.01, "taxa_venda": 0.02, "taxa_str": "Selic + 0.01%", "pu_compra": 19759.93, "pu_venda": 19746.7, "pu_base": 19746.7, "minimo": 197.6, "vencimento": "01/03/2028", "ano_vencimento": 2028, "dt_venc_iso": "2028-03-01", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-5", "nome": "Tesouro Prefixado 2029", "tipo_completo": "Tesouro Prefixado", "categoria": "prefixado", "categoria_nome": "Prefixado", "cor": "#F59E0B", "indexador": "Prefixado", "taxa_compra": 14.13, "taxa_venda": 14.25, "taxa_str": "14.13% a.a.", "pu_compra": 736.17, "pu_venda": 733.99, "pu_base": 733.99, "minimo": 30.0, "vencimento": "01/01/2029", "ano_vencimento": 2029, "dt_venc_iso": "2029-01-01", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-28", "nome": "Tesouro Prefixado com Juros Semestrais 2029", "tipo_completo": "Tesouro Prefixado com Juros Semestrais", "categoria": "prefixado", "categoria_nome": "Prefixado", "cor": "#F59E0B", "indexador": "Prefixado", "taxa_compra": 13.97, "taxa_venda": 14.09, "taxa_str": "13.97% a.a.", "pu_compra": 944.57, "pu_venda": 942.01, "pu_base": 942.01, "minimo": 30.0, "vencimento": "01/01/2029", "ano_vencimento": 2029, "dt_venc_iso": "2029-01-01", "semestral": true, "data_base": "27/08/2026"}, {"id": "tit-1", "nome": "Tesouro Selic 2029", "tipo_completo": "Tesouro Selic", "categoria": "selic", "categoria_nome": "Tesouro Selic", "cor": "#10B981", "indexador": "Taxa Selic", "taxa_compra": 0.03, "taxa_venda": 0.04, "taxa_str": "Selic + 0.03%", "pu_compra": 19749.38, "pu_venda": 19734.19, "pu_base": 19734.19, "minimo": 197.49, "vencimento": "01/03/2029", "ano_vencimento": 2029, "dt_venc_iso": "2029-03-01", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-22", "nome": "Tesouro IPCA+ 2029", "tipo_completo": "Tesouro IPCA+", "categoria": "ipca", "categoria_nome": "Tesouro IPCA+", "cor": "#3B82F6", "indexador": "IPCA + Taxa Fixa", "taxa_compra": 8.05, "taxa_venda": 8.17, "taxa_str": "IPCA + 8.05%", "pu_compra": 3849.92, "pu_venda": 3837.64, "pu_base": 3837.64, "minimo": 38.5, "vencimento": "15/05/2029", "ano_vencimento": 2029, "dt_venc_iso": "2029-05-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-11", "nome": "Tesouro IPCA+ com Juros Semestrais 2030", "tipo_completo": "Tesouro IPCA+ com Juros Semestrais", "categoria": "ipca", "categoria_nome": "Tesouro IPCA+", "cor": "#3B82F6", "indexador": "IPCA + Taxa Fixa", "taxa_compra": 8.07, "taxa_venda": 8.19, "taxa_str": "IPCA + 8.07%", "pu_compra": 4442.1, "pu_venda": 4423.74, "pu_base": 4423.74, "minimo": 44.42, "vencimento": "15/08/2030", "ano_vencimento": 2030, "dt_venc_iso": "2030-08-15", "semestral": true, "data_base": "27/08/2026"}, {"id": "tit-51", "nome": "Tesouro Educa+ 2030", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 7.97, "taxa_venda": 8.09, "taxa_str": "IPCA + 7.97%", "pu_compra": 3497.44, "pu_venda": 3488.8, "pu_base": 3488.8, "minimo": 34.97, "vencimento": "15/12/2030", "ano_vencimento": 2030, "dt_venc_iso": "2030-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-8", "nome": "Tesouro Prefixado 2031", "tipo_completo": "Tesouro Prefixado", "categoria": "prefixado", "categoria_nome": "Prefixado", "cor": "#F59E0B", "indexador": "Prefixado", "taxa_compra": 14.39, "taxa_venda": 14.51, "taxa_str": "14.39% a.a.", "pu_compra": 560.54, "pu_venda": 557.71, "pu_base": 557.71, "minimo": 30.0, "vencimento": "01/01/2031", "ano_vencimento": 2031, "dt_venc_iso": "2031-01-01", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-25", "nome": "Tesouro IGPM+ com Juros Semestrais 2031", "tipo_completo": "Tesouro IGPM+ com Juros Semestrais", "categoria": "igpm", "categoria_nome": "Tesouro IGPM+", "cor": "#6366F1", "indexador": "IGP-M + Taxa Fixa", "taxa_compra": 8.02, "taxa_venda": 8.14, "taxa_str": "IGP-M + 8.02%", "pu_compra": 7622.11, "pu_venda": 7590.31, "pu_base": 7590.31, "minimo": 76.22, "vencimento": "01/01/2031", "ano_vencimento": 2031, "dt_venc_iso": "2031-01-01", "semestral": true, "data_base": "27/08/2026"}, {"id": "tit-30", "nome": "Tesouro Prefixado com Juros Semestrais 2031", "tipo_completo": "Tesouro Prefixado com Juros Semestrais", "categoria": "prefixado", "categoria_nome": "Prefixado", "cor": "#F59E0B", "indexador": "Prefixado", "taxa_compra": 14.41, "taxa_venda": 14.53, "taxa_str": "14.41% a.a.", "pu_compra": 886.47, "pu_venda": 882.75, "pu_base": 882.75, "minimo": 30.0, "vencimento": "01/01/2031", "ano_vencimento": 2031, "dt_venc_iso": "2031-01-01", "semestral": true, "data_base": "27/08/2026"}, {"id": "tit-3", "nome": "Tesouro Selic 2031", "tipo_completo": "Tesouro Selic", "categoria": "selic", "categoria_nome": "Tesouro Selic", "cor": "#10B981", "indexador": "Taxa Selic", "taxa_compra": 0.07, "taxa_venda": 0.08, "taxa_str": "Selic + 0.07%", "pu_compra": 19698.31, "pu_venda": 19679.22, "pu_base": 19679.22, "minimo": 196.98, "vencimento": "01/03/2031", "ano_vencimento": 2031, "dt_venc_iso": "2031-03-01", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-54", "nome": "Tesouro Educa+ 2031", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 7.99, "taxa_venda": 8.11, "taxa_str": "IPCA + 7.99%", "pu_compra": 3839.8, "pu_venda": 3827.66, "pu_base": 3827.66, "minimo": 38.4, "vencimento": "15/12/2031", "ano_vencimento": 2031, "dt_venc_iso": "2031-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-9", "nome": "Tesouro Prefixado 2032", "tipo_completo": "Tesouro Prefixado", "categoria": "prefixado", "categoria_nome": "Prefixado", "cor": "#F59E0B", "indexador": "Prefixado", "taxa_compra": 14.48, "taxa_venda": 14.6, "taxa_str": "14.48% a.a.", "pu_compra": 487.98, "pu_venda": 485.01, "pu_base": 485.01, "minimo": 30.0, "vencimento": "01/01/2032", "ano_vencimento": 2032, "dt_venc_iso": "2032-01-01", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-17", "nome": "Tesouro IPCA+ com Juros Semestrais 2032", "tipo_completo": "Tesouro IPCA+ com Juros Semestrais", "categoria": "ipca", "categoria_nome": "Tesouro IPCA+", "cor": "#3B82F6", "indexador": "IPCA + Taxa Fixa", "taxa_compra": 8.0, "taxa_venda": 8.12, "taxa_str": "IPCA + 8.00%", "pu_compra": 4329.16, "pu_venda": 4304.17, "pu_base": 4304.17, "minimo": 43.29, "vencimento": "15/08/2032", "ano_vencimento": 2032, "dt_venc_iso": "2032-08-15", "semestral": true, "data_base": "27/08/2026"}, {"id": "tit-23", "nome": "Tesouro IPCA+ 2032", "tipo_completo": "Tesouro IPCA+", "categoria": "ipca", "categoria_nome": "Tesouro IPCA+", "cor": "#3B82F6", "indexador": "IPCA + Taxa Fixa", "taxa_compra": 8.0, "taxa_venda": 8.12, "taxa_str": "IPCA + 8.00%", "pu_compra": 3002.58, "pu_venda": 2982.24, "pu_base": 2982.24, "minimo": 30.03, "vencimento": "15/08/2032", "ano_vencimento": 2032, "dt_venc_iso": "2032-08-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-41", "nome": "Tesouro Educa+ 2032", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 8.03, "taxa_venda": 8.15, "taxa_str": "IPCA + 8.03%", "pu_compra": 3552.47, "pu_venda": 3537.34, "pu_base": 3537.34, "minimo": 35.52, "vencimento": "15/12/2032", "ano_vencimento": 2032, "dt_venc_iso": "2032-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-27", "nome": "Tesouro Prefixado com Juros Semestrais 2033", "tipo_completo": "Tesouro Prefixado com Juros Semestrais", "categoria": "prefixado", "categoria_nome": "Prefixado", "cor": "#F59E0B", "indexador": "Prefixado", "taxa_compra": 14.5, "taxa_venda": 14.62, "taxa_str": "14.50% a.a.", "pu_compra": 843.96, "pu_venda": 839.46, "pu_base": 839.46, "minimo": 30.0, "vencimento": "01/01/2033", "ano_vencimento": 2033, "dt_venc_iso": "2033-01-01", "semestral": true, "data_base": "27/08/2026"}, {"id": "tit-42", "nome": "Tesouro Educa+ 2033", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 8.0, "taxa_venda": 8.12, "taxa_str": "IPCA + 8.00%", "pu_compra": 3294.2, "pu_venda": 3276.55, "pu_base": 3276.55, "minimo": 32.94, "vencimento": "15/12/2033", "ano_vencimento": 2033, "dt_venc_iso": "2033-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-45", "nome": "Tesouro Educa+ 2034", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 7.96, "taxa_venda": 8.08, "taxa_str": "IPCA + 7.96%", "pu_compra": 3057.39, "pu_venda": 3037.64, "pu_base": 3037.64, "minimo": 30.57, "vencimento": "15/12/2034", "ano_vencimento": 2034, "dt_venc_iso": "2034-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-26", "nome": "Tesouro Prefixado com Juros Semestrais 2035", "tipo_completo": "Tesouro Prefixado com Juros Semestrais", "categoria": "prefixado", "categoria_nome": "Prefixado", "cor": "#F59E0B", "indexador": "Prefixado", "taxa_compra": 14.53, "taxa_venda": 14.65, "taxa_str": "14.53% a.a.", "pu_compra": 813.15, "pu_venda": 808.11, "pu_base": 808.11, "minimo": 30.0, "vencimento": "01/01/2035", "ano_vencimento": 2035, "dt_venc_iso": "2035-01-01", "semestral": true, "data_base": "27/08/2026"}, {"id": "tit-15", "nome": "Tesouro IPCA+ com Juros Semestrais 2035", "tipo_completo": "Tesouro IPCA+ com Juros Semestrais", "categoria": "ipca", "categoria_nome": "Tesouro IPCA+", "cor": "#3B82F6", "indexador": "IPCA + Taxa Fixa", "taxa_compra": 7.84, "taxa_venda": 7.96, "taxa_str": "IPCA + 7.84%", "pu_compra": 4305.46, "pu_venda": 4272.93, "pu_base": 4272.93, "minimo": 43.05, "vencimento": "15/05/2035", "ano_vencimento": 2035, "dt_venc_iso": "2035-05-15", "semestral": true, "data_base": "27/08/2026"}, {"id": "tit-24", "nome": "Tesouro IPCA+ 2035", "tipo_completo": "Tesouro IPCA+", "categoria": "ipca", "categoria_nome": "Tesouro IPCA+", "cor": "#3B82F6", "indexador": "IPCA + Taxa Fixa", "taxa_compra": 7.81, "taxa_venda": 7.93, "taxa_str": "IPCA + 7.81%", "pu_compra": 2472.41, "pu_venda": 2448.22, "pu_base": 2448.22, "minimo": 30.0, "vencimento": "15/05/2035", "ano_vencimento": 2035, "dt_venc_iso": "2035-05-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-40", "nome": "Tesouro Educa+ 2035", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 7.91, "taxa_venda": 8.03, "taxa_str": "IPCA + 7.91%", "pu_compra": 2841.59, "pu_venda": 2820.1, "pu_base": 2820.1, "minimo": 30.0, "vencimento": "15/12/2035", "ano_vencimento": 2035, "dt_venc_iso": "2035-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-52", "nome": "Tesouro Educa+ 2036", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 7.84, "taxa_venda": 7.96, "taxa_str": "IPCA + 7.84%", "pu_compra": 2647.4, "pu_venda": 2624.47, "pu_base": 2624.47, "minimo": 30.0, "vencimento": "15/12/2036", "ano_vencimento": 2036, "dt_venc_iso": "2036-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-31", "nome": "Tesouro Prefixado com Juros Semestrais 2037", "tipo_completo": "Tesouro Prefixado com Juros Semestrais", "categoria": "prefixado", "categoria_nome": "Prefixado", "cor": "#F59E0B", "indexador": "Prefixado", "taxa_compra": 14.48, "taxa_venda": 14.6, "taxa_str": "14.48% a.a.", "pu_compra": 792.08, "pu_venda": 786.66, "pu_base": 786.66, "minimo": 30.0, "vencimento": "01/01/2037", "ano_vencimento": 2037, "dt_venc_iso": "2037-01-01", "semestral": true, "data_base": "27/08/2026"}, {"id": "tit-10", "nome": "Tesouro IPCA+ com Juros Semestrais 2037", "tipo_completo": "Tesouro IPCA+ com Juros Semestrais", "categoria": "ipca", "categoria_nome": "Tesouro IPCA+", "cor": "#3B82F6", "indexador": "IPCA + Taxa Fixa", "taxa_compra": 7.69, "taxa_venda": 7.81, "taxa_str": "IPCA + 7.69%", "pu_compra": 4272.89, "pu_venda": 4235.61, "pu_base": 4235.61, "minimo": 42.73, "vencimento": "15/05/2037", "ano_vencimento": 2037, "dt_venc_iso": "2037-05-15", "semestral": true, "data_base": "27/08/2026"}, {"id": "tit-53", "nome": "Tesouro Educa+ 2037", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 7.77, "taxa_venda": 7.89, "taxa_str": "IPCA + 7.77%", "pu_compra": 2469.87, "pu_venda": 2445.76, "pu_base": 2445.76, "minimo": 30.0, "vencimento": "15/12/2037", "ano_vencimento": 2037, "dt_venc_iso": "2037-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-50", "nome": "Tesouro Educa+ 2038", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 7.69, "taxa_venda": 7.81, "taxa_str": "IPCA + 7.69%", "pu_compra": 2309.72, "pu_venda": 2284.63, "pu_base": 2284.63, "minimo": 30.0, "vencimento": "15/12/2038", "ano_vencimento": 2038, "dt_venc_iso": "2038-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-56", "nome": "Tesouro Educa+ 2039", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 7.62, "taxa_venda": 7.74, "taxa_str": "IPCA + 7.62%", "pu_compra": 2160.97, "pu_venda": 2135.13, "pu_base": 2135.13, "minimo": 30.0, "vencimento": "15/12/2039", "ano_vencimento": 2039, "dt_venc_iso": "2039-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-16", "nome": "Tesouro IPCA+ com Juros Semestrais 2040", "tipo_completo": "Tesouro IPCA+ com Juros Semestrais", "categoria": "ipca", "categoria_nome": "Tesouro IPCA+", "cor": "#3B82F6", "indexador": "IPCA + Taxa Fixa", "taxa_compra": 7.57, "taxa_venda": 7.69, "taxa_str": "IPCA + 7.57%", "pu_compra": 4146.14, "pu_venda": 4102.72, "pu_base": 4102.72, "minimo": 41.46, "vencimento": "15/08/2040", "ano_vencimento": 2040, "dt_venc_iso": "2040-08-15", "semestral": true, "data_base": "27/08/2026"}, {"id": "tit-19", "nome": "Tesouro IPCA+ 2040", "tipo_completo": "Tesouro IPCA+", "categoria": "ipca", "categoria_nome": "Tesouro IPCA+", "cor": "#3B82F6", "indexador": "IPCA + Taxa Fixa", "taxa_compra": 7.46, "taxa_venda": 7.58, "taxa_str": "IPCA + 7.46%", "pu_compra": 1744.94, "pu_venda": 1717.78, "pu_base": 1717.78, "minimo": 30.0, "vencimento": "15/08/2040", "ano_vencimento": 2040, "dt_venc_iso": "2040-08-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-58", "nome": "Tesouro Educa+ 2040", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 7.56, "taxa_venda": 7.68, "taxa_str": "IPCA + 7.56%", "pu_compra": 2021.77, "pu_venda": 1995.36, "pu_base": 1995.36, "minimo": 30.0, "vencimento": "15/12/2040", "ano_vencimento": 2040, "dt_venc_iso": "2040-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-47", "nome": "Tesouro Educa+ 2041", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 7.51, "taxa_venda": 7.63, "taxa_str": "IPCA + 7.51%", "pu_compra": 1891.35, "pu_venda": 1864.57, "pu_base": 1864.57, "minimo": 30.0, "vencimento": "15/12/2041", "ano_vencimento": 2041, "dt_venc_iso": "2041-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-55", "nome": "Tesouro Educa+ 2042", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 7.47, "taxa_venda": 7.59, "taxa_str": "IPCA + 7.47%", "pu_compra": 1768.77, "pu_venda": 1741.78, "pu_base": 1741.78, "minimo": 30.0, "vencimento": "15/12/2042", "ano_vencimento": 2042, "dt_venc_iso": "2042-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-49", "nome": "Tesouro Educa+ 2043", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 7.43, "taxa_venda": 7.55, "taxa_str": "IPCA + 7.43%", "pu_compra": 1655.21, "pu_venda": 1628.14, "pu_base": 1628.14, "minimo": 30.0, "vencimento": "15/12/2043", "ano_vencimento": 2043, "dt_venc_iso": "2043-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-44", "nome": "Tesouro Educa+ 2044", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 7.4, "taxa_venda": 7.52, "taxa_str": "IPCA + 7.40%", "pu_compra": 1547.97, "pu_venda": 1520.95, "pu_base": 1520.95, "minimo": 30.0, "vencimento": "15/12/2044", "ano_vencimento": 2044, "dt_venc_iso": "2044-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-13", "nome": "Tesouro IPCA+ com Juros Semestrais 2045", "tipo_completo": "Tesouro IPCA+ com Juros Semestrais", "categoria": "ipca", "categoria_nome": "Tesouro IPCA+", "cor": "#3B82F6", "indexador": "IPCA + Taxa Fixa", "taxa_compra": 7.47, "taxa_venda": 7.59, "taxa_str": "IPCA + 7.47%", "pu_compra": 4158.4, "pu_venda": 4108.41, "pu_base": 4108.41, "minimo": 41.58, "vencimento": "15/05/2045", "ano_vencimento": 2045, "dt_venc_iso": "2045-05-15", "semestral": true, "data_base": "27/08/2026"}, {"id": "tit-21", "nome": "Tesouro IPCA+ 2045", "tipo_completo": "Tesouro IPCA+", "categoria": "ipca", "categoria_nome": "Tesouro IPCA+", "cor": "#3B82F6", "indexador": "IPCA + Taxa Fixa", "taxa_compra": 7.32, "taxa_venda": 7.44, "taxa_str": "IPCA + 7.32%", "pu_compra": 1273.87, "pu_venda": 1247.43, "pu_base": 1247.43, "minimo": 30.0, "vencimento": "15/05/2045", "ano_vencimento": 2045, "dt_venc_iso": "2045-05-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-43", "nome": "Tesouro Educa+ 2045", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 7.37, "taxa_venda": 7.49, "taxa_str": "IPCA + 7.37%", "pu_compra": 1448.6, "pu_venda": 1421.73, "pu_base": 1421.73, "minimo": 30.0, "vencimento": "15/12/2045", "ano_vencimento": 2045, "dt_venc_iso": "2045-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-57", "nome": "Tesouro Educa+ 2046", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 7.34, "taxa_venda": 7.46, "taxa_str": "IPCA + 7.34%", "pu_compra": 1356.46, "pu_venda": 1329.81, "pu_base": 1329.81, "minimo": 30.0, "vencimento": "15/12/2046", "ano_vencimento": 2046, "dt_venc_iso": "2046-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-46", "nome": "Tesouro Educa+ 2047", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 7.32, "taxa_venda": 7.44, "taxa_str": "IPCA + 7.32%", "pu_compra": 1268.78, "pu_venda": 1242.48, "pu_base": 1242.48, "minimo": 30.0, "vencimento": "15/12/2047", "ano_vencimento": 2047, "dt_venc_iso": "2047-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-48", "nome": "Tesouro Educa+ 2048", "tipo_completo": "Tesouro Educa+", "categoria": "educa_mais", "categoria_nome": "Tesouro Educa+ (Estudos)", "cor": "#EC4899", "indexador": "IPCA + Renda Educação", "taxa_compra": 7.31, "taxa_venda": 7.43, "taxa_str": "IPCA + 7.31%", "pu_compra": 1185.06, "pu_venda": 1159.2, "pu_base": 1159.2, "minimo": 30.0, "vencimento": "15/12/2048", "ano_vencimento": 2048, "dt_venc_iso": "2048-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-35", "nome": "Tesouro Renda+ Aposentadoria Extra 2049", "tipo_completo": "Tesouro Renda+ Aposentadoria Extra", "categoria": "renda_mais", "categoria_nome": "Tesouro Renda+ (Aposentadoria)", "cor": "#8B5CF6", "indexador": "IPCA + Renda Aposentadoria", "taxa_compra": 7.55, "taxa_venda": 7.67, "taxa_str": "IPCA + 7.55%", "pu_compra": 1967.43, "pu_venda": 1943.23, "pu_base": 1943.23, "minimo": 30.0, "vencimento": "15/12/2049", "ano_vencimento": 2049, "dt_venc_iso": "2049-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-14", "nome": "Tesouro IPCA+ com Juros Semestrais 2050", "tipo_completo": "Tesouro IPCA+ com Juros Semestrais", "categoria": "ipca", "categoria_nome": "Tesouro IPCA+", "cor": "#3B82F6", "indexador": "IPCA + Taxa Fixa", "taxa_compra": 7.43, "taxa_venda": 7.55, "taxa_str": "IPCA + 7.43%", "pu_compra": 4032.65, "pu_venda": 3978.05, "pu_base": 3978.05, "minimo": 40.33, "vencimento": "15/08/2050", "ano_vencimento": 2050, "dt_venc_iso": "2050-08-15", "semestral": true, "data_base": "27/08/2026"}, {"id": "tit-20", "nome": "Tesouro IPCA+ 2050", "tipo_completo": "Tesouro IPCA+", "categoria": "ipca", "categoria_nome": "Tesouro IPCA+", "cor": "#3B82F6", "indexador": "IPCA + Taxa Fixa", "taxa_compra": 7.26, "taxa_venda": 7.38, "taxa_str": "IPCA + 7.26%", "pu_compra": 892.91, "pu_venda": 869.28, "pu_base": 869.28, "minimo": 30.0, "vencimento": "15/08/2050", "ano_vencimento": 2050, "dt_venc_iso": "2050-08-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-37", "nome": "Tesouro Renda+ Aposentadoria Extra 2054", "tipo_completo": "Tesouro Renda+ Aposentadoria Extra", "categoria": "renda_mais", "categoria_nome": "Tesouro Renda+ (Aposentadoria)", "cor": "#8B5CF6", "indexador": "IPCA + Renda Aposentadoria", "taxa_compra": 7.38, "taxa_venda": 7.5, "taxa_str": "IPCA + 7.38%", "pu_compra": 1405.21, "pu_venda": 1380.15, "pu_base": 1380.15, "minimo": 30.0, "vencimento": "15/12/2054", "ano_vencimento": 2054, "dt_venc_iso": "2054-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-18", "nome": "Tesouro IPCA+ com Juros Semestrais 2055", "tipo_completo": "Tesouro IPCA+ com Juros Semestrais", "categoria": "ipca", "categoria_nome": "Tesouro IPCA+", "cor": "#3B82F6", "indexador": "IPCA + Taxa Fixa", "taxa_compra": 7.34, "taxa_venda": 7.46, "taxa_str": "IPCA + 7.34%", "pu_compra": 4100.61, "pu_venda": 4042.53, "pu_base": 4042.53, "minimo": 41.01, "vencimento": "15/05/2055", "ano_vencimento": 2055, "dt_venc_iso": "2055-05-15", "semestral": true, "data_base": "27/08/2026"}, {"id": "tit-34", "nome": "Tesouro Renda+ Aposentadoria Extra 2059", "tipo_completo": "Tesouro Renda+ Aposentadoria Extra", "categoria": "renda_mais", "categoria_nome": "Tesouro Renda+ (Aposentadoria)", "cor": "#8B5CF6", "indexador": "IPCA + Renda Aposentadoria", "taxa_compra": 7.25, "taxa_venda": 7.37, "taxa_str": "IPCA + 7.25%", "pu_compra": 1011.69, "pu_venda": 988.09, "pu_base": 988.09, "minimo": 30.0, "vencimento": "15/12/2059", "ano_vencimento": 2059, "dt_venc_iso": "2059-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-12", "nome": "Tesouro IPCA+ com Juros Semestrais 2060", "tipo_completo": "Tesouro IPCA+ com Juros Semestrais", "categoria": "ipca", "categoria_nome": "Tesouro IPCA+", "cor": "#3B82F6", "indexador": "IPCA + Taxa Fixa", "taxa_compra": 7.33, "taxa_venda": 7.45, "taxa_str": "IPCA + 7.33%", "pu_compra": 4001.02, "pu_venda": 3940.99, "pu_base": 3940.99, "minimo": 40.01, "vencimento": "15/08/2060", "ano_vencimento": 2060, "dt_venc_iso": "2060-08-15", "semestral": true, "data_base": "27/08/2026"}, {"id": "tit-39", "nome": "Tesouro Renda+ Aposentadoria Extra 2064", "tipo_completo": "Tesouro Renda+ Aposentadoria Extra", "categoria": "renda_mais", "categoria_nome": "Tesouro Renda+ (Aposentadoria)", "cor": "#8B5CF6", "indexador": "IPCA + Renda Aposentadoria", "taxa_compra": 7.17, "taxa_venda": 7.29, "taxa_str": "IPCA + 7.17%", "pu_compra": 728.54, "pu_venda": 707.57, "pu_base": 707.57, "minimo": 30.0, "vencimento": "15/12/2064", "ano_vencimento": 2064, "dt_venc_iso": "2064-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-33", "nome": "Tesouro Renda+ Aposentadoria Extra 2069", "tipo_completo": "Tesouro Renda+ Aposentadoria Extra", "categoria": "renda_mais", "categoria_nome": "Tesouro Renda+ (Aposentadoria)", "cor": "#8B5CF6", "indexador": "IPCA + Renda Aposentadoria", "taxa_compra": 7.11, "taxa_venda": 7.23, "taxa_str": "IPCA + 7.11%", "pu_compra": 525.44, "pu_venda": 507.46, "pu_base": 507.46, "minimo": 30.0, "vencimento": "15/12/2069", "ano_vencimento": 2069, "dt_venc_iso": "2069-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-36", "nome": "Tesouro Renda+ Aposentadoria Extra 2074", "tipo_completo": "Tesouro Renda+ Aposentadoria Extra", "categoria": "renda_mais", "categoria_nome": "Tesouro Renda+ (Aposentadoria)", "cor": "#8B5CF6", "indexador": "IPCA + Renda Aposentadoria", "taxa_compra": 7.07, "taxa_venda": 7.19, "taxa_str": "IPCA + 7.07%", "pu_compra": 378.52, "pu_venda": 363.53, "pu_base": 363.53, "minimo": 30.0, "vencimento": "15/12/2074", "ano_vencimento": 2074, "dt_venc_iso": "2074-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-38", "nome": "Tesouro Renda+ Aposentadoria Extra 2079", "tipo_completo": "Tesouro Renda+ Aposentadoria Extra", "categoria": "renda_mais", "categoria_nome": "Tesouro Renda+ (Aposentadoria)", "cor": "#8B5CF6", "indexador": "IPCA + Renda Aposentadoria", "taxa_compra": 7.07, "taxa_venda": 7.19, "taxa_str": "IPCA + 7.07%", "pu_compra": 269.53, "pu_venda": 257.42, "pu_base": 257.42, "minimo": 30.0, "vencimento": "15/12/2079", "ano_vencimento": 2079, "dt_venc_iso": "2079-12-15", "semestral": false, "data_base": "27/08/2026"}, {"id": "tit-32", "nome": "Tesouro Renda+ Aposentadoria Extra 2084", "tipo_completo": "Tesouro Renda+ Aposentadoria Extra", "categoria": "renda_mais", "categoria_nome": "Tesouro Renda+ (Aposentadoria)", "cor": "#8B5CF6", "indexador": "IPCA + Renda Aposentadoria", "taxa_compra": 7.07, "taxa_venda": 7.19, "taxa_str": "IPCA + 7.07%", "pu_compra": 191.94, "pu_venda": 182.3, "pu_base": 182.3, "minimo": 30.0, "vencimento": "15/12/2084", "ano_vencimento": 2084, "dt_venc_iso": "2084-12-15", "semestral": false, "data_base": "27/08/2026"}];
+
+    // Estado da aplicação
+    let state = {
+      category: 'todos',
+      search: '',
+      semestral: 'todos',
+      order: 'venc_asc',
+      selectedId: DATA.length > 0 ? DATA[0].id : null,
+      aporteSim: 5000
+    };
+
+    // Formatação de Moeda e Números
+    function fmtBRL(val) {
+      return (val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function fmtPct(val) {
+      return (val || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+    }
+
+    // Filtragem de Títulos
+    function getFilteredTitles() {
+      return DATA.filter(item => {
+        // Categoria
+        if (state.category !== 'todos' && item.categoria !== state.category) {
+          return false;
+        }
+
+        // Semestral
+        if (state.semestral === 'com' && !item.semestral) return false;
+        if (state.semestral === 'sem' && item.semestral) return false;
+
+        // Busca textual
+        if (state.search) {
+          const q = state.search.toLowerCase().trim();
+          const matchNome = item.nome.toLowerCase().includes(q);
+          const matchTipo = item.tipo_completo.toLowerCase().includes(q);
+          const matchVenc = item.vencimento.includes(q) || String(item.ano_vencimento).includes(q);
+          const matchTaxa = item.taxa_str.toLowerCase().includes(q);
+          if (!matchNome && !matchTipo && !matchVenc && !matchTaxa) {
+            return false;
+          }
+        }
+
+        return true;
+      }).sort((a, b) => {
+        switch (state.order) {
+          case 'venc_asc':
+            return a.dt_venc_iso.localeCompare(b.dt_venc_iso);
+          case 'venc_desc':
+            return b.dt_venc_iso.localeCompare(a.dt_venc_iso);
+          case 'taxa_desc':
+            return b.taxa_compra - a.taxa_compra;
+          case 'taxa_asc':
+            return a.taxa_compra - b.taxa_compra;
+          case 'pu_asc':
+            return a.pu_compra - b.pu_compra;
+          case 'pu_desc':
+            return b.pu_compra - a.pu_compra;
+          case 'nome_asc':
+            return a.nome.localeCompare(b.nome);
+          default:
+            return 0;
+        }
+      });
+    }
+
+    // Renderizar Tabela
+    function renderTable() {
+      const filtered = getFilteredTitles();
+      const tbody = document.getElementById('tableBody');
+      const countLabel = document.getElementById('tableCountLabel');
+      
+      countLabel.textContent = `Exibindo ${filtered.length} título${filtered.length === 1 ? '' : 's'}`;
+      tbody.innerHTML = '';
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 32px; color: var(--text-muted);">Nenhum título encontrado com os filtros aplicados.</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(item => {
+        const isSelected = item.id === state.selectedId;
+        const tr = document.createElement('tr');
+        if (isSelected) tr.classList.add('selected');
+        tr.onclick = () => selectTitle(item.id);
+
+        tr.innerHTML = `
+          <td>
+            <div class="title-cell">
+              <span class="title-name">${item.nome}</span>
+              <div class="title-tag-row">
+                <span class="badge-cat" style="background: rgba(255,255,255,0.06); color: ${item.cor};">${item.categoria_nome}</span>
+                ${item.semestral ? '<span class="badge-semestral">Juros Semestrais</span>' : ''}
+              </div>
+            </div>
+          </td>
+          <td><span class="date-val">${item.vencimento}</span></td>
+          <td><span class="rate-val" style="color:${item.cor};">${item.taxa_str}</span></td>
+          <td><span class="price-val">${fmtBRL(item.pu_compra)}</span></td>
+          <td><span class="price-val" style="color:var(--text-muted);">${fmtBRL(item.pu_venda)}</span></td>
+          <td><span class="price-val" style="color:var(--brand-emerald);">${fmtBRL(item.minimo)}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Selecionar Título para o Painel
+    function selectTitle(id) {
+      state.selectedId = id;
+      const item = DATA.find(x => x.id === id);
+      if (!item) return;
+
+      document.querySelectorAll('#tableBody tr').forEach(tr => tr.classList.remove('selected'));
+      renderTable();
+
+      // Atualizar Painel
+      document.getElementById('panelTitle').textContent = item.nome;
+      const catEl = document.getElementById('panelCategory');
+      catEl.textContent = item.categoria_nome;
+      catEl.style.background = `${item.cor}22`;
+      catEl.style.color = item.cor;
+
+      document.getElementById('panelRate').textContent = item.taxa_str;
+      document.getElementById('panelRate').style.color = item.cor;
+
+      let desc = "Rendimento prefixado garantido";
+      if (item.categoria === 'selic') desc = "Rendimento pós-fixado indexado à Taxa Selic com liquidez diária";
+      else if (item.categoria === 'ipca') desc = "Proteção integral contra a inflação + taxa de juro real garantida";
+      else if (item.categoria === 'renda_mais') desc = "Aposentadoria extra com 240 amortizações mensais corrigidas pelo IPCA";
+      else if (item.categoria === 'educa_mais') desc = "Planejamento universitário com 60 parcelas mensais corrigidas pelo IPCA";
+      document.getElementById('panelDesc').textContent = desc;
+
+      document.getElementById('panelVenc').textContent = item.vencimento;
+
+      // Calcular dias até o vencimento
+      const now = new Date('2026-08-28');
+      const vDate = new Date(item.dt_venc_iso);
+      const diffTime = Math.max(0, vDate - now);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const diffYears = (diffDays / 365.25).toFixed(1);
+      document.getElementById('panelPrazoDias').textContent = `${diffDays} dias (~${diffYears} anos)`;
+
+      document.getElementById('panelPuCompra').textContent = fmtBRL(item.pu_compra);
+      document.getElementById('panelPuVenda').textContent = fmtBRL(item.pu_venda);
+      document.getElementById('panelMinimo').textContent = fmtBRL(item.minimo);
+      document.getElementById('panelFluxo').textContent = item.semestral ? 'Semestral (Cupons)' : 'No Vencimento';
+
+      calcularSimulacao();
+    }
+
+    // Calcular Simulação de Aporte
+    function setSimVal(val) {
+      state.aporteSim = val;
+      document.getElementById('simAporteInput').value = val;
+      document.querySelectorAll('.sim-btn-val').forEach(b => {
+        b.classList.toggle('active', b.textContent.includes(val.toLocaleString('pt-BR')));
+      });
+      calcularSimulacao();
+    }
+
+    function calcularSimulacao() {
+      const item = DATA.find(x => x.id === state.selectedId) || DATA[0];
+      const aporte = parseFloat(document.getElementById('simAporteInput').value) || 1000;
+      
+      const now = new Date('2026-08-28');
+      const vDate = new Date(item.dt_venc_iso);
+      const diffYears = Math.max(0.1, (vDate - now) / (1000 * 60 * 60 * 24 * 365.25));
+
+      // Taxa estimada
+      let taxaAnual = item.taxa_compra / 100;
+      if (item.categoria === 'selic') {
+        taxaAnual = (10.50 + item.taxa_compra) / 100; // Selic benchmark ~10.5%
+      } else if (item.categoria === 'ipca' || item.categoria === 'renda_mais' || item.categoria === 'educa_mais') {
+        taxaAnual = (item.taxa_compra + 4.5) / 100; // IPCA médio 4.5% + juro real
+      }
+
+      // Juros compostos brutos
+      const montante = aporte * Math.pow(1 + taxaAnual, diffYears);
+      const lucro = montante - aporte;
+      const rentabilidadePct = (lucro / aporte) * 100;
+
+      document.getElementById('simResgateVal').textContent = fmtBRL(montante);
+      document.getElementById('simResgateSub').textContent = `Lucro bruto estimado de +${fmtBRL(lucro)} (+${rentabilidadePct.toFixed(1)}% em ${diffYears.toFixed(1)} anos)`;
+    }
+
+    // Renderizar Gráfico de Barras Comparativo
+    function renderChart() {
+      const container = document.getElementById('barsContainer');
+      container.innerHTML = '';
+
+      // Títulos mais representativos
+      const destaques = [
+        DATA.find(x => x.tipo_completo.includes('Selic 2029')) || DATA.find(x => x.categoria === 'selic'),
+        DATA.find(x => x.tipo_completo === 'Tesouro Prefixado' && x.ano_vencimento === 2029) || DATA.find(x => x.categoria === 'prefixado'),
+        DATA.find(x => x.tipo_completo.includes('Prefixado com Juros Semestrais') && x.ano_vencimento === 2035),
+        DATA.find(x => x.tipo_completo === 'Tesouro IPCA+' && x.ano_vencimento === 2035) || DATA.find(x => x.categoria === 'ipca'),
+        DATA.find(x => x.tipo_completo.includes('IPCA+ com Juros Semestrais') && x.ano_vencimento === 2030),
+        DATA.find(x => x.categoria === 'renda_mais' && x.ano_vencimento === 2049),
+        DATA.find(x => x.categoria === 'educa_mais' && x.ano_vencimento === 2032)
+      ].filter(Boolean);
+
+      const maxTaxa = Math.max(...destaques.map(d => d.taxa_compra), 15);
+
+      destaques.forEach(d => {
+        const pct = (d.taxa_compra / maxTaxa) * 100;
+        const row = document.createElement('div');
+        row.className = 'bar-row';
+        row.innerHTML = `
+          <div class="bar-label" title="${d.nome}">${d.nome}</div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width: ${pct}%; background: ${d.cor};"></div>
+          </div>
+          <div class="bar-value">${d.taxa_str}</div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    // Contadores das Tabs
+    function updateTabCounts() {
+      document.getElementById('count-todos').textContent = DATA.length;
+      ['selic', 'prefixado', 'ipca', 'renda_mais', 'educa_mais'].forEach(cat => {
+        const el = document.getElementById(`count-${cat}`);
+        if (el) {
+          el.textContent = DATA.filter(x => x.categoria === cat).length;
+        }
+      });
+    }
+
+    // Inicialização e Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      updateTabCounts();
+      renderTable();
+      renderChart();
+      if (DATA.length > 0) {
+        selectTitle(DATA[0].id);
+      }
+
+      // Eventos das Tabs
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.category = btn.dataset.cat;
+          renderTable();
+        });
+      });
+
+      // Busca
+      const searchInput = document.getElementById('searchInput');
+      searchInput.addEventListener('input', (e) => {
+        state.search = e.target.value;
+        renderTable();
+      });
+
+      // Atalho de Teclado '/'
+      document.addEventListener('keydown', (e) => {
+        if (e.key === '/' && document.activeElement !== searchInput) {
+          e.preventDefault();
+          searchInput.focus();
+        } else if (e.key === 'Escape' && document.activeElement === searchInput) {
+          searchInput.value = '';
+          state.search = '';
+          searchInput.blur();
+          renderTable();
+        }
+      });
+
+      // Select Semestral
+      document.getElementById('selectSemestral').addEventListener('change', (e) => {
+        state.semestral = e.target.value;
+        renderTable();
+      });
+
+      // Select Ordenação
+      document.getElementById('selectOrder').addEventListener('change', (e) => {
+        state.order = e.target.value;
+        renderTable();
+      });
+
+      // Input do Simulador
+      document.getElementById('simAporteInput').addEventListener('input', () => {
+        calcularSimulacao();
+      });
+    });
+  </script>
+</body>
+</html>
