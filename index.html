@@ -1302,5 +1302,13 @@
       });
     });
   </script>
+<script>
+(function(){
+  var pass = prompt("Este dashboard é protegido. Digite a senha:");
+  if (pass !== "5010540") {
+    document.body.innerHTML = '<div style="font-family:sans-serif;text-align:center;margin-top:20vh;font-size:1.2em;color:#333;">Acesso negado. Senha incorreta.</div>';
+  }
+})();
+</script>
 </body>
 </html>
